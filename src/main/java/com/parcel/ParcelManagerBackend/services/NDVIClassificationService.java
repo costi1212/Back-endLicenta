@@ -19,6 +19,7 @@ public class NDVIClassificationService {
     @Value("${ndvi.classification.url}")
     private String ndviClassificationUrl;
 
+
     private final RestTemplate restTemplate;
 
     public NDVIClassificationService(RestTemplateBuilder restTemplateBuilder) {

@@ -17,5 +17,6 @@ public class NDVIServiceController {
     String getNdviClassification(@RequestBody NDVIRequest ndviRequest){
 
     return ndviClassificationService.getClassificationPlainJson(ndviRequest);
+
     }
 }
