@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.*;
 import java.net.URI;
 import java.util.Collections;
 
@@ -19,6 +20,9 @@ public class HadoopService {
     @Value("${webhdfs.url}")
     private String webHdfsUrl;
 
+    @Value("${data.path}")
+    private String dataPath;
+
     private final RestTemplate restTemplate;
 
     public HadoopService(RestTemplateBuilder restTemplateBuilder) {
@@ -27,7 +31,13 @@ public class HadoopService {
     }
 
     public ResponseEntity<String> AddJson(String json, String user, String parcelId){
-        String url = webHdfsUrl + user + "/parcels/" + parcelId + ".txt";
+        String url;
+        if(!parcelId.contains(".txt")){
+            url = webHdfsUrl + user + "/parcels/raw/" + parcelId + ".txt";
+        }
+        else{
+            url = webHdfsUrl + user + "/parcels/raw/" + parcelId;
+        }
         URI finalUrl = UriComponentsBuilder.fromUriString(url).queryParam("user.name", user).
                 queryParam("op", "CREATE").build().toUri();
         HttpHeaders headers = new HttpHeaders();
@@ -36,5 +46,26 @@ public class HadoopService {
         HttpEntity<String> body = new HttpEntity<String>(json);
         return this.restTemplate.exchange(finalUrl.toString(), HttpMethod.PUT, body, String.class);
     }
+
+    public String AddAllFiles(String user) throws IOException {
+        StringBuilder output = new StringBuilder();
+        File dir = new File(dataPath);
+        File [] fileList = dir.listFiles();
+        if(fileList!= null){
+            for (File file:fileList) {
+                StringBuilder resultStringBuilder = new StringBuilder();
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        resultStringBuilder.append(line).append("\n");
+                    }
+                }
+                String parcelId = file.toString().split("\\\\")[file.toString().split("\\\\").length-1];
+                AddJson(resultStringBuilder.toString(), user, parcelId);
+            }
+        }
+        return output.toString();
+    }
+
 
 }
